@@ -1,28 +1,24 @@
-import pandas as pd
+import re
+
 import requests
-from io import StringIO
+from bs4 import BeautifulSoup
 
-# CSV文件的URL
-csv_url = "https://healthdata.gov/resource/xkzp-zhs7.csv"
+import clean_data
 
-# 下载CSV文件内容
-response = requests.get(csv_url)
+# 要解析的网页URL
+url = "https://healthdata.gov/ASPR/COVID-19-Treatments/xkzp-zhs7/about_data"
+
+# 发送请求以获取网页内容
+response = requests.get(url)
 response.raise_for_status()  # 检查请求是否成功
 
-# 将CSV内容读入DataFrame
-df = pd.read_csv(StringIO(response.text))
+# 使用BeautifulSoup解析网页内容
+soup = BeautifulSoup(response.content, "html.parser")
 
-# 基本预处理
-# 移除列名中的前后空白
-df.columns = df.columns.str.strip()
+# 正则表达式查找所有符合条件的链接
+csv_links = re.findall(r'https://healthdata.gov/resource/[a-zA-Z0-9_-]+\.csv', str(soup))
 
-# 将所有文本转换为小写（如果适用）
-df = df.apply(lambda col: col.str.lower() if col.dtype == 'object' else col)
-
-# 显示清理后的DataFrame的前几行
-print(df.head())
-
-# 将清理后的DataFrame保存为新的CSV文件
-df.to_csv("COVID-19_Treatments_Cleaned.csv", index=False)
-
-print("The CSV file was successfully downloaded, cleaned and saved.")
+# 打印找到的所有CSV链接
+for link in csv_links:
+    print("csv link found: " + link)
+    clean_data.get_data(link)
